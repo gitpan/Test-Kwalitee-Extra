@@ -17,5 +17,5 @@ requires:
   Module::CPANTS::Analyse: 0
   Module::CoreList: 0
   Test::Builder::Tester: 0
-  perl: 5.006000
-version: v0.0.1
+  perl: 5.006
+version: v0.0.2
