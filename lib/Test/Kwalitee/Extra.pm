@@ -3,7 +3,8 @@ package Test::Kwalitee::Extra;
 use strict;
 use warnings;
 
-our $VERSION = 'v0.0.2'; # VERSION
+# ABSTRACT: Run Kwalitee tests including optional indicators, especially, prereq_matches_use
+our $VERSION = 'v0.0.3'; # VERSION
 
 use version 0.77;
 use Cwd;
@@ -97,6 +98,7 @@ sub _do_test_pmu
 		while(my (undef, $val) = each @{$analyser->d->{prereq}}) {
 			if($val->{requires} eq 'perl') {
 				$minperlver = $val->{version};
+				keys @{$analyser->d->{prereq}}; # reset each
 				last;
 			}
 		}
@@ -212,12 +214,18 @@ sub import
 }
 
 1;
+
 __END__
+
 =pod
 
 =head1 NAME
 
-Test::Kwalitee::Extra - Run Kwalitee tests including optional indicators, especially, prereq_matches_use.
+Test::Kwalitee::Extra - Run Kwalitee tests including optional indicators, especially, prereq_matches_use
+
+=head1 VERSION
+
+version v0.0.3
 
 =head1 SYNOPSIS
 
@@ -239,7 +247,6 @@ Test::Kwalitee::Extra - Run Kwalitee tests including optional indicators, especi
   use Test::More;
   eval { require Test::Kwalitee::Extra; Test::Kwalitee::Extra->import(qw(!:optional)); };
   plan( skip_all => "Test::Kwalitee::Extra not installed: $@; skipping") if $@;
-
 
 =head1 DESCRIPTION
 
@@ -278,14 +285,12 @@ You can override it by explicitly specifying the indicator:
 
 Some tags have special meanings.
 
-=over 4
-
-=item C<:no_plan>
+=head2 C<:no_plan>
 
 If specified, do not call C<Test::Builder::plan>.
 You may need to specify it, if this test is embedded into other tests.
 
-=item C<:minperlver> <C<version>>
+=head2 C<:minperlver> <C<version>>
 
 C<prereq_matches_use> indicator ignores core modules.
 What modules are in core, however, is different among perl versions.
@@ -293,8 +298,6 @@ If minimum perl version is specified in META.yml or such a meta information, it 
 Otherewise, C<$]>, the version of the current perl interpreter, is used.
 
 If specified, this option overrides them.
-
-=back
 
 =head1 INDICATORS
 
@@ -520,7 +523,9 @@ L<Test::Kwalitee> - Another test module for Kwalitee indicators.
 
 Yasutaka ATARASHI <yakex@cpan.org>
 
-=head1 LICENSE
+=head1 COPYRIGHT AND LICENSE
+
+This software is copyright (c) 2012 by Yasutaka ATARASHI.
 
 This is free software; you can redistribute it and/or modify it under
 the same terms as the Perl 5 programming language system itself.

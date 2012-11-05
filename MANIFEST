@@ -16,3 +16,4 @@ t/author-critic.t
 t/prereq_matches_use_info.pl
 t/release-pod-coverage.t
 t/release-pod-syntax.t
+weaver.ini

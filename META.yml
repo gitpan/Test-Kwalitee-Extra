@@ -1,5 +1,5 @@
 ---
-abstract: 'Run Kwalitee tests including optional indicators, especially, prereq_matches_use.'
+abstract: 'Run Kwalitee tests including optional indicators, especially, prereq_matches_use'
 author:
   - 'Yasutaka ATARASHI <yakex@cpan.org>'
 build_requires: {}
@@ -18,4 +18,4 @@ requires:
   Module::CoreList: 0
   Test::Builder::Tester: 0
   perl: 5.006
-version: v0.0.2
+version: v0.0.3

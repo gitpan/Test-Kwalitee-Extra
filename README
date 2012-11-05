@@ -1,9 +1,9 @@
 
 
 This archive contains the distribution Test-Kwalitee-Extra,
-version v0.0.2:
+version v0.0.3:
 
-  Run Kwalitee tests including optional indicators, especially, prereq_matches_use.
+  Run Kwalitee tests including optional indicators, especially, prereq_matches_use
 
 This software is copyright (c) 2012 by Yasutaka ATARASHI.
 

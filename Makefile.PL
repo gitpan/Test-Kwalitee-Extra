@@ -9,7 +9,7 @@ use ExtUtils::MakeMaker 6.30;
 
 
 my %WriteMakefileArgs = (
-  "ABSTRACT" => "Run Kwalitee tests including optional indicators, especially, prereq_matches_use.",
+  "ABSTRACT" => "Run Kwalitee tests including optional indicators, especially, prereq_matches_use",
   "AUTHOR" => "Yasutaka ATARASHI <yakex\@cpan.org>",
   "BUILD_REQUIRES" => {},
   "CONFIGURE_REQUIRES" => {
@@ -25,7 +25,7 @@ my %WriteMakefileArgs = (
     "Module::CoreList" => 0,
     "Test::Builder::Tester" => 0
   },
-  "VERSION" => "v0.0.2",
+  "VERSION" => "v0.0.3",
   "test" => {
     "TESTS" => "t/*.t"
   }
