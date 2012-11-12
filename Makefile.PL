@@ -25,7 +25,7 @@ my %WriteMakefileArgs = (
     "Module::CoreList" => 0,
     "Test::Builder::Tester" => 0
   },
-  "VERSION" => "v0.0.3",
+  "VERSION" => "v0.0.4",
   "test" => {
     "TESTS" => "t/*.t"
   }
