@@ -4,7 +4,7 @@ use strict;
 use warnings;
 
 # ABSTRACT: Run Kwalitee tests including optional indicators, especially, prereq_matches_use
-our $VERSION = 'v0.0.5'; # VERSION
+our $VERSION = 'v0.0.6'; # VERSION
 
 use version 0.77;
 use Cwd;
@@ -120,8 +120,7 @@ sub _do_test_pmu
 		croak 'Query to MetaCPAN failed for $val->{requires}' if ! exists $result->{distribution};
 		my $dist = $result->{distribution};
 		push @missing, $key.' in '.$dist if $val->{in_code} && ! exists $prereq{$dist};
-# Test::Pod% excluded by Module-CPANTS-ProcessCPAN-0.77
-		push @bmissing, $key.' in '.$dist if $val->{in_tests} && $key !~ /^Test::Pod/ && ! exists $build_prereq{$dist};
+		push @bmissing, $key.' in '.$dist if $val->{in_tests} && ! exists $build_prereq{$dist};
 	}
 
 	my @ret;
@@ -224,7 +223,7 @@ Test::Kwalitee::Extra - Run Kwalitee tests including optional indicators, especi
 
 =head1 VERSION
 
-version v0.0.5
+version v0.0.6
 
 =head1 SYNOPSIS
 
@@ -249,7 +248,7 @@ version v0.0.5
 
 =head1 DESCRIPTION
 
-L<CPANTS|http://cpants.charsbar.org/> checks Kwalitee indicators, which is not quality 
+L<CPANTS|http://cpants.cpanauthors.org/> checks Kwalitee indicators, which is not quality 
 but automatically-measurable indicators how good your distribution is.
 L<Module::CPANTS::Analyse> calcluates Kwalitee but it is not directly applicable to your module test.
 CPAN has already had L<Test::Kwalitee> for the test module of Kwalitee.
@@ -524,7 +523,7 @@ Yasutaka ATARASHI <yakex@cpan.org>
 
 =head1 COPYRIGHT AND LICENSE
 
-This software is copyright (c) 2012 by Yasutaka ATARASHI.
+This software is copyright (c) 2013 by Yasutaka ATARASHI.
 
 This is free software; you can redistribute it and/or modify it under
 the same terms as the Perl 5 programming language system itself.
