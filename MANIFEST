@@ -12,6 +12,9 @@ t/03-include.t
 t/04-prereq_maches_use.t
 t/05-build_prereq_matches_use.t
 t/06-minperlver.t
+t/08-_get_packages_not_indexed.t
+t/08-_get_packages_not_indexed/LocalTest.pm
+t/08-_get_packages_not_indexed/LocalTest/Test.pm
 t/author-critic.t
 t/prereq_matches_use_info.pl
 t/release-pod-coverage.t

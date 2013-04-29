@@ -12,11 +12,15 @@ meta-spec:
   url: http://module-build.sourceforge.net/META-spec-v1.4.html
   version: 1.4
 name: Test-Kwalitee-Extra
+no_index:
+  directory:
+    - t/08-_get_packages_not_indexed
 requires:
   MetaCPAN::API::Tiny: 0
-  Module::CPANTS::Analyse: 0.86
+  Module::CPANTS::Analyse: 0.87
   Module::CoreList: 0
+  Module::Extract::Namespaces: 0
   Test::Builder::Tester: 0
   perl: 5.006
   version: 0.77
-version: v0.0.6
+version: v0.0.7

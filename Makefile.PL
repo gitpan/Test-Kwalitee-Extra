@@ -21,12 +21,13 @@ my %WriteMakefileArgs = (
   "NAME" => "Test::Kwalitee::Extra",
   "PREREQ_PM" => {
     "MetaCPAN::API::Tiny" => 0,
-    "Module::CPANTS::Analyse" => "0.86",
+    "Module::CPANTS::Analyse" => "0.87",
     "Module::CoreList" => 0,
+    "Module::Extract::Namespaces" => 0,
     "Test::Builder::Tester" => 0,
     "version" => "0.77"
   },
-  "VERSION" => "v0.0.6",
+  "VERSION" => "v0.0.7",
   "test" => {
     "TESTS" => "t/*.t"
   }

@@ -4,16 +4,20 @@ use strict;
 use warnings;
 
 # ABSTRACT: Run Kwalitee tests including optional indicators, especially, prereq_matches_use
-our $VERSION = 'v0.0.6'; # VERSION
+our $VERSION = 'v0.0.7'; # VERSION
 
 use version 0.77;
 use Cwd;
 use Carp;
+use File::Find;
+use File::Spec;
 use Test::Builder;
 use MetaCPAN::API::Tiny;
-use Module::CPANTS::Analyse;
+use Module::CPANTS::Analyse 0.87;
 use Module::CPANTS::Kwalitee::Prereq;
 use Module::CoreList;
+use Module::Extract::Namespaces;
+
 
 sub _init
 {
@@ -30,9 +34,6 @@ sub _init
 			no_generated_files => 1,
 			manifest_matches_dist => 1,
 
-		# broken in Module::CPANTS::Analyse 0.86 rt.cpan.org #80225
-			metayml_conforms_to_known_spec => 1,
-			metayml_conforms_spec_current  => 1,
 		},
 		include => {},
 		core => 1,
@@ -82,8 +83,24 @@ sub _is_core
 	return 0;
 }
 
+sub _do_test_one
+{
+	local $Test::Builder::Level = $Test::Builder::Level + 1;
+
+	my ($test, $ok, $name, $error, $remedy, $more) = @_;
+
+	$test->ok($ok, $name);
+	if(!$ok) {
+		$test->diag('  Detail: ', $error);
+		$test->diag('  Detail: ', ref($more) ? join(', ', @$more) : $more) if defined $more;
+		$test->diag('  Remedy: ', $remedy);
+	}
+}
+
 sub _do_test_pmu
 {
+	local $Test::Builder::Level = $Test::Builder::Level + 1;
+
 	my ($env) = @_;
 	my ($error, $remedy, $berror, $bremedy) = _pmu_error_desc();
 	my ($test, $analyser) = @{$env}{qw(builder analyser)};
@@ -112,9 +129,19 @@ sub _do_test_pmu
 		$prereq{$result->{distribution}} = 1 if $val->{is_prereq} || $val->{is_optional_prereq};
 		$build_prereq{$result->{distribution}} = 1 if $val->{is_prereq} || $val->{is_build_prereq} || $val->{is_optional_prereq};
 	}
+
+	# Look at META.yml to determine if the author specified modules provided
+	# by the distribution that should not be indexed by CPAN.
+	my $packages_not_indexed = _get_packages_not_indexed(
+		d       => $analyser->d,
+		distdir => $analyser->distdir,
+	);
+
 	my (@missing, @bmissing);
 	while(my ($key, $val) = each %{$analyser->d->{uses}}) {
 		next if version::is_lax($key);
+		# Skip packages provided by the distribution but not indexed by CPAN.
+		next if scalar( grep {$key eq $_} @$packages_not_indexed ) != 0;
 		next if _is_core($key, $minperlver);
 		my $result = $mcpan->module($key);
 		croak 'Query to MetaCPAN failed for $val->{requires}' if ! exists $result->{distribution};
@@ -123,12 +150,100 @@ sub _do_test_pmu
 		push @bmissing, $key.' in '.$dist if $val->{in_tests} && ! exists $build_prereq{$dist};
 	}
 
-	my @ret;
-	push @ret, [ @missing == 0, 'prereq_matches_use by '.__PACKAGE__, $error, $remedy, 'Missing: '.join(', ', sort @missing) ]
+	_do_test_one($test, @missing == 0, 'prereq_matches_use by '.__PACKAGE__, $error, $remedy, 'Missing: '.join(', ', sort @missing))
 		if _check_ind($env, { name => 'prereq_matches_use', is_extra => 1 });
-	push @ret, [ @bmissing == 0, 'build_prereq_matches_use by '.__PACKAGE__, $berror, $bremedy, 'Missing: '.join(', ', sort @bmissing) ]
+	_do_test_one($test, @bmissing == 0, 'build_prereq_matches_use by '.__PACKAGE__, $berror, $bremedy, 'Missing: '.join(', ', sort @bmissing))
 		if _check_ind($env, { name => 'build_prereq_matches_use', is_experimental => 1 });
-	return @ret;
+}
+
+# Look at META.yml to determine if the author specified modules provided
+# by the distribution that should not be indexed by CPAN.
+sub _get_packages_not_indexed
+{
+	my (%args) = @_;
+	my $d = delete $args{'d'};
+	my $distdir = delete $args{'distdir'};
+
+	# Check if no_index exists in META.yml
+	my $meta_yml = $d->{'meta_yml'};
+	return [] if !defined $meta_yml;
+	my $no_index = $meta_yml->{'no_index'};
+	return [] if !defined $no_index;
+
+	# Get the uses, to determine which ones are no-index internals.
+	my $uses = $d->{'uses'};
+	return [] if !defined $uses;
+
+	my $packages_not_indexed = {};
+
+	# Find all the files corresponding to the 'file' and 'directory'
+	# sections of 'no_index'.
+	my @files = ();
+
+	if (defined $no_index->{'file'}) {
+		push @files, map { File::Spec->catdir($distdir, $_) } @{$no_index->{'file'}};
+	}
+
+	if (defined $no_index->{'directory'}) {
+		my $filter_pm_files = sub {
+			return if $File::Find::name !~ /\.pm$/;
+			push(@files, $File::Find::name);
+		};
+
+		foreach my $directory (@{$no_index->{'directory'}}) {
+			File::Find::find(
+				$filter_pm_files,
+				File::Spec->catdir($distdir, $directory),
+			);
+		}
+	}
+
+	# Extract the namespaces from those files.
+	foreach my $file (@files) {
+		my @namespaces = Module::Extract::Namespaces->from_file($file);
+		foreach my $namespace (@namespaces) {
+			next if !exists $uses->{$namespace};
+			$packages_not_indexed->{$namespace} = undef;
+		}
+	}
+
+	# 'package' section of no_index.
+	if (defined $no_index->{'package'}) {
+		foreach my $package (@{$no_index->{'package'}}) {
+			next if !exists $uses->{$package};
+			$packages_not_indexed->{$package} = undef;
+		}
+	}
+
+	# 'namespace' section of no_index.
+	if (defined $no_index->{'namespace'}) {
+		foreach my $use (keys %$uses) {
+			foreach my $namespace (@{$no_index->{'namespace'}}) {
+				next if $use !~ /^\Q$namespace\E(?:::|$)/;
+				$packages_not_indexed->{$use} = undef;
+			}
+		}
+	}
+
+	return [sort keys %$packages_not_indexed];
+}
+
+sub _count_tests
+{
+	my ($env) = @_;
+	my ($test, $analyser) = @{$env}{qw(builder analyser)};
+	my $count = 0;
+	foreach my $mod (@{$analyser->mck->generators}) {
+		foreach my $ind (@{$mod->kwalitee_indicators}) {
+			next if $ind->{needs_db};
+			next if ! _check_ind($env, $ind);
+			++$count;
+		}
+	}
+	# overrides needs_db
+	++$count if ! _check_ind($env, { name => 'prereq_matches_use', is_extra => 1 });
+	++$count if ! _check_ind($env, { name => 'build_prereq_matches_use', is_experimental => 1 });
+	return $count;
 }
 
 sub _do_test
@@ -136,29 +251,26 @@ sub _do_test
 	local $Test::Builder::Level = $Test::Builder::Level + 1;
 	my ($env) = @_;
 	my ($test, $analyser) = @{$env}{qw(builder analyser)};
-	my (@ind);
+
+	if(! $env->{no_plan}) {
+		$test->plan(tests => _count_tests(@_));
+	}
 	foreach my $mod (@{$analyser->mck->generators}) {
 		$mod->analyse($analyser);
 		foreach my $ind (@{$mod->kwalitee_indicators}) {
 			next if $ind->{needs_db};
-			next if ! _check_ind($env, $ind);	
-			my $ret = $ind->{code}($analyser->d, $ind);
-			push @ind, [ $ret, $ind->{name}.' by '.$mod, $ind->{error}, $ind->{remedy}, $analyser->d->{error}{$ind->{name}} ];
+			next if ! _check_ind($env, $ind);
+			_do_test_one(
+				$test,
+				$ind->{code}($analyser->d, $ind),
+				$ind->{name}.' by '.$mod,
+				$ind->{error},
+				$ind->{remedy},
+				$analyser->d->{error}{$ind->{name}}
+			);
 		}
 	}
-	my (@pmu) = _do_test_pmu($env);
-	push @ind, @pmu if @pmu; 
-	if(! $env->{no_plan}) {
-		$test->plan(tests => scalar @ind);
-	}
-	foreach my $ind (@ind) {
-		$test->ok($ind->[0], $ind->[1]);
-		if(!$ind->[0]) {
-			$test->diag('  Detail: ', $ind->[2]);
-			$test->diag('  Detail: ', ref($ind->[4]) ? join(', ', @{$ind->[4]}) : $ind->[4]) if defined $ind->[4];
-			$test->diag('  Remedy: ', $ind->[3]);
-		}
-	}
+	_do_test_pmu($env);
 }
 
 my %class = ( core => 1, optional => 1, experimental => 1 );
@@ -223,7 +335,7 @@ Test::Kwalitee::Extra - Run Kwalitee tests including optional indicators, especi
 
 =head1 VERSION
 
-version v0.0.6
+version v0.0.7
 
 =head1 SYNOPSIS
 
@@ -252,12 +364,12 @@ L<CPANTS|http://cpants.cpanauthors.org/> checks Kwalitee indicators, which is no
 but automatically-measurable indicators how good your distribution is.
 L<Module::CPANTS::Analyse> calcluates Kwalitee but it is not directly applicable to your module test.
 CPAN has already had L<Test::Kwalitee> for the test module of Kwalitee.
-It is, however, limited to 13 indicators from 34 indicators (core and optional), as of 1.01.
+It is, however, limited to 13 indicators from 35 indicators (core and optional), as of 1.01.
 Furthermore, L<Module::CPANTS::Analyse> itself cannot calculate C<prereq_matches_use> indicator.
 It is marked as C<needs_db>, but only limited information is needed to calculate the indicator.
 This module calculate C<prereq_matches_use> to query needed information to L<MetaCPAN|https://metacpan.org/>.
 
-Currently, 18 core indicators and 8 optional indicators are available in default configuration. See L</INDICATORS> section.
+Currently, 19 core indicators and 9 optional indicators are available in default configuration. See L</INDICATORS> section.
 
 =head1 OPTIONS
 
@@ -274,10 +386,10 @@ For example,
 C<!has_example> is in effect, that is C<has_exaple> is excluded, even though C<has_example> is an C<optional> indicator.
 
 Second, default excluded indicators mentioned in L</INDICATORS> section are not included by specifying tags.
-For example, in the above example, C<:optional> does not enable C<is_prereq> and C<metayml_conforms_spec_current>.
+For example, in the above example, C<:optional> does not enable C<is_prereq>.
 You can override it by explicitly specifying the indicator:
 
-  use Test::Kwalitee::Extra qw(metayml_conforms_spec_current);
+  use Test::Kwalitee::Extra qw(manifest_matches_dist);
 
 =head2 SPECIAL TAGS
 
@@ -353,6 +465,10 @@ metayml_has_license
 
 =item *
 
+metayml_conforms_to_known_spec
+
+=item *
+
 proper_libs
 
 =item *
@@ -400,6 +516,10 @@ has_example
 =item *
 
 no_stdin_for_prompting
+
+=item *
+
+metayml_conforms_spec_current
 
 =item *
 
@@ -455,21 +575,11 @@ has_proper_version
 
 =item *
 
-fest_matches_dist
+manifest_matches_dist
 
 =item *
 
 no_generated_files
-
-=back
-
-=item Broken in Module::CPANTS::Analyse 0.86 L<rt.cpan.org #80225|https://rt.cpan.org/Public/Bug/Display.html?id=80225>
-
-=over 4
-
-=item *
-
-metayml_conforms_to_known_spec
 
 =back
 
@@ -489,16 +599,6 @@ is_prereq
 
 =back
 
-=item Broken in Module::CPANTS::Analyse 0.86 L<rt.cpan.org #80225|https://rt.cpan.org/Public/Bug/Display.html?id=80225>
-
-=over 4
-
-=item *
-
-metayml_conforms_spec_current
-
-=back
-
 =back
 
 =back
@@ -514,6 +614,10 @@ L<Module::CPANTS::Analyse> - Kwalitee indicators, except for prereq_matches_use,
 =item *
 
 L<Test::Kwalitee> - Another test module for Kwalitee indicators.
+
+=item *
+
+L<Dist::Zilla::Plugin::Test::Kwalitee::Extra> - Dist::Zilla plugin for this module.
 
 =back
 
