@@ -4,7 +4,7 @@ use strict;
 use warnings;
 
 # ABSTRACT: Run Kwalitee tests including optional indicators, especially, prereq_matches_use
-our $VERSION = 'v0.0.7'; # VERSION
+our $VERSION = 'v0.0.8'; # VERSION
 
 use version 0.77;
 use Cwd;
@@ -335,7 +335,7 @@ Test::Kwalitee::Extra - Run Kwalitee tests including optional indicators, especi
 
 =head1 VERSION
 
-version v0.0.7
+version v0.0.8
 
 =head1 SYNOPSIS
 
