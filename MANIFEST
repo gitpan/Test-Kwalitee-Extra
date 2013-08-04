@@ -1,11 +1,13 @@
 Changes
 LICENSE
 MANIFEST
+META.json
 META.yml
 Makefile.PL
 README
 dist.ini
 lib/Test/Kwalitee/Extra.pm
+t/00-compile.t
 t/01-kwalitee.t
 t/02-exclude-class.t
 t/03-include.t
