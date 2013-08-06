@@ -26,4 +26,4 @@ requires:
 resources:
   homepage: https://github.com/yak1ex/Test-Kwalitee-Extra
   repository: https://github.com/yak1ex/Test-Kwalitee-Extra.git
-version: v0.1.0
+version: v0.1.1

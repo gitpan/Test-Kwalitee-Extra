@@ -4,7 +4,7 @@ use strict;
 use warnings;
 
 # ABSTRACT: Run Kwalitee tests including optional indicators, especially, prereq_matches_use
-our $VERSION = 'v0.1.0'; # VERSION
+our $VERSION = 'v0.1.1'; # VERSION
 
 use version 0.77;
 use Cwd;
@@ -345,7 +345,7 @@ Test::Kwalitee::Extra - Run Kwalitee tests including optional indicators, especi
 
 =head1 VERSION
 
-version v0.1.0
+version v0.1.1
 
 =head1 SYNOPSIS
 
@@ -384,7 +384,7 @@ For example,
 
   use Test::Kwalitee::Extra qw(!has_example :optional);
 
-C<!has_example> is in effect, that is C<has_exaple> is excluded, even though C<has_example> is an C<optional> indicator.
+C<!has_example> is in effect, that is C<has_example> is excluded, even though C<has_example> is an C<optional> indicator.
 
 Second, default excluded indicators mentioned in L</INDICATORS> section are not included by specifying tags. For example, in the above example, C<:optional> does not enable C<is_prereq>. You can override it by explicitly specifying the indicator:
 
