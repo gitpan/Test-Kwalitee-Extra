@@ -4,7 +4,7 @@ use strict;
 use warnings;
 
 # ABSTRACT: Run Kwalitee tests including optional indicators, especially, prereq_matches_use
-our $VERSION = 'v0.1.2'; # VERSION
+our $VERSION = 'v0.1.3'; # VERSION
 
 use version 0.77;
 use Cwd;
@@ -264,8 +264,8 @@ sub _count_tests
 		}
 	}
 	# overrides needs_db
-	++$count if ! _check_ind($env, { name => 'prereq_matches_use', is_extra => 1 });
-	++$count if ! _check_ind($env, { name => 'build_prereq_matches_use', is_experimental => 1 });
+	++$count if _check_ind($env, { name => 'prereq_matches_use', is_extra => 1 });
+	++$count if _check_ind($env, { name => 'build_prereq_matches_use', is_experimental => 1 });
 	return $count;
 }
 
@@ -358,7 +358,7 @@ Test::Kwalitee::Extra - Run Kwalitee tests including optional indicators, especi
 
 =head1 VERSION
 
-version v0.1.2
+version v0.1.3
 
 =head1 SYNOPSIS
 

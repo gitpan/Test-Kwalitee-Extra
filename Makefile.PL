@@ -27,8 +27,12 @@ my %WriteMakefileArgs = (
     "Test::Builder::Tester" => 0,
     "version" => "0.77"
   },
-  "TEST_REQUIRES" => {},
-  "VERSION" => "v0.1.2",
+  "TEST_REQUIRES" => {
+    "IO::Handle" => 0,
+    "IPC::Open3" => 0,
+    "Test::More" => 0
+  },
+  "VERSION" => "v0.1.3",
   "test" => {
     "TESTS" => "t/*.t"
   }
