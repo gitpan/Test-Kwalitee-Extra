@@ -4,7 +4,7 @@ use strict;
 use warnings;
 
 # ABSTRACT: Run Kwalitee tests including optional indicators, especially, prereq_matches_use
-our $VERSION = 'v0.1.3'; # VERSION
+our $VERSION = 'v0.2.0'; # VERSION
 
 use version 0.77;
 use Cwd;
@@ -49,6 +49,7 @@ sub _init
 			distdir => cwd(),
 			dist    => cwd(),
 		}),
+                retry => 5,
 	};
 }
 
@@ -135,8 +136,17 @@ sub _do_test_pmu
 	my (%build_prereq, %prereq);
 	foreach my $val (@{$analyser->d->{prereq}}) {
 		next if _is_core($val->{requires}, $minperlver);
-		my $result = eval { $mcpan->module($val->{requires}) };
-		if($@ || ! exists $result->{distribution}) {
+                my $retry = 0;
+		my $result;
+		while($retry < $env->{retry}) {
+			$result = eval { $mcpan->module($val->{requires}) };
+			if($@ || ! exists $result->{distribution}) {
+				++$retry;
+			} else {
+				last;
+			}
+		}
+		if($retry == $env->{retry}) {
 			$qerror{$val->{requires}} = 1;
 			next;
 		}
@@ -308,6 +318,8 @@ sub import
 			$env->{no_plan} = 1;
 		} elsif($arg eq ':minperlver') {
 			$env->{minperlver} = shift @arg;
+		} elsif($arg eq ':retry') {
+			$env->{retry} = shift @arg;
 		} elsif($arg =~ /^!:/) {
 			warn "Tag $arg appears after indicator" if $ind_seen;
 			$arg =~ s/^!://;
@@ -358,7 +370,7 @@ Test::Kwalitee::Extra - Run Kwalitee tests including optional indicators, especi
 
 =head1 VERSION
 
-version v0.1.3
+version v0.2.0
 
 =head1 SYNOPSIS
 
@@ -416,6 +428,12 @@ If specified, do not call C<Test::Builder::plan>. You may need to specify it, if
 C<prereq_matches_use> indicator ignores core modules. What modules are in core, however, is different among perl versions. If minimum perl version is specified in META.yml or such a meta information, it is used as minimum perl version. Otherewise, C<$]>, the version of the current perl interpreter, is used.
 
 If specified, this option overrides them.
+
+=head2 C<:retry> <C<count>>
+
+The number of retry to query to MetaCPAN. This is related with C<prereq_matches_use> and C<build_prereq_matches_use> indicators only.
+
+Defaults to 5.
 
 =head1 INDICATORS
 
