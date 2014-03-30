@@ -4,7 +4,7 @@ use strict;
 use warnings;
 
 # ABSTRACT: Run Kwalitee tests including optional indicators, especially, prereq_matches_use
-our $VERSION = 'v0.2.0'; # VERSION
+our $VERSION = 'v0.2.1'; # VERSION
 
 use version 0.77;
 use Cwd;
@@ -370,7 +370,7 @@ Test::Kwalitee::Extra - Run Kwalitee tests including optional indicators, especi
 
 =head1 VERSION
 
-version v0.2.0
+version v0.2.1
 
 =head1 SYNOPSIS
 
@@ -393,9 +393,14 @@ version v0.2.0
   eval { require Test::Kwalitee::Extra; Test::Kwalitee::Extra->import(qw(!:optional)); };
   plan( skip_all => "Test::Kwalitee::Extra not installed: $@; skipping") if $@;
 
+  # Avoid network access
+  use Test::Kwalitee::Extra qw(!prereq_matches_use);
+  # or, when experimental enabled
+  use Test::Kwalitee::Extra qw(:experimental !prereq_matches_use !build_prereq_matches_use);
+
 =head1 DESCRIPTION
 
-L<CPANTS|http://cpants.cpanauthors.org/> checks Kwalitee indicators, which is not quality but automatically-measurable indicators how good your distribution is. L<Module::CPANTS::Analyse> calcluates Kwalitee but it is not directly applicable to your module test. CPAN has already had L<Test::Kwalitee> for the test module of Kwalitee. It is, however, impossible to calculate C<prereq_matches_use> indicator, because dependent module L<Module::CPANTS::Analyse> itself cannot calculate C<prereq_matches_use> indicator. It is marked as C<needs_db>, but only limited information is needed to calculate the indicator. This module calculate C<prereq_matches_use> to query needed information to L<MetaCPAN|https://metacpan.org/>.
+L<CPANTS|http://cpants.cpanauthors.org/> checks Kwalitee indicators, which is not quality but automatically-measurable indicators how good your distribution is. L<Module::CPANTS::Analyse> calcluates Kwalitee but it is not directly applicable to your module test. CPAN has already had L<Test::Kwalitee> for the test module of Kwalitee. It is, however, impossible to calculate C<prereq_matches_use> indicator, because dependent module L<Module::CPANTS::Analyse> itself cannot calculate C<prereq_matches_use> indicator. It is marked as C<needs_db> which means pre-calculated module database is necessary, but only limited information is needed to calculate the indicator. This module calculate C<prereq_matches_use> to query needed information to L<MetaCPAN site|https://metacpan.org/> online.
 
 For available indicators, see L</INDICATORS> section.
 
@@ -434,6 +439,21 @@ If specified, this option overrides them.
 The number of retry to query to MetaCPAN. This is related with C<prereq_matches_use> and C<build_prereq_matches_use> indicators only.
 
 Defaults to 5.
+
+=head1 CAVEATS
+
+An optional indicator C<prereq_matches_use> and an experimental indicator C<build_prereq_matches_use> require HTTP access to L<MetaCPAN site|https://metacpan.org/>. If you want to avoid it, you can specify excluded indicators like
+
+  # Avoid network access
+  use Test::Kwalitee::Extra qw(!prereq_matches_use);
+
+  # or, when experimental enabled
+  use Test::Kwalitee::Extra qw(:experimental !prereq_matches_use !build_prereq_matches_use);
+
+Or mitigate wait by tentative failures to reduce retry counts like
+
+  # Try just one time for each query
+  use Test::Kwalitee::Extra qw(:retry 1);
 
 =head1 INDICATORS
 
@@ -693,7 +713,7 @@ Yasutaka ATARASHI <yakex@cpan.org>
 
 =head1 COPYRIGHT AND LICENSE
 
-This software is copyright (c) 2013 by Yasutaka ATARASHI.
+This software is copyright (c) 2014 by Yasutaka ATARASHI.
 
 This is free software; you can redistribute it and/or modify it under
 the same terms as the Perl 5 programming language system itself.
